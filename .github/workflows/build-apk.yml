@@ -1,0 +1,38 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate project (supports uploading ReelCount.zip as-is)
+        id: loc
+        run: |
+          if [ -f ReelCount.zip ]; then
+            unzip -q ReelCount.zip
+            echo "dir=ReelCount" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Build debug APK
+        run: gradle assembleDebug
+        working-directory: ${{ steps.loc.outputs.dir }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reel-counter-apk
+          path: ${{ steps.loc.outputs.dir }}/app/build/outputs/apk/debug/app-debug.apk
